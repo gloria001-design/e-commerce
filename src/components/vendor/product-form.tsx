@@ -14,7 +14,7 @@ function Label({ children, hint }: { children: React.ReactNode; hint?: React.Rea
   return <div className="mb-1.5 flex justify-between text-sm"><span className="font-semibold">{children}</span>{hint && <span className="text-xs text-ink-muted">{hint}</span>}</div>;
 }
 
-export function ProductForm({ backHref = "/admin", backLabel = "Back to overview" }: { backHref?: string; backLabel?: string }) {
+export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboard" }: { backHref?: string; backLabel?: string }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [sku, setSku] = useState("");
@@ -72,7 +72,7 @@ export function ProductForm({ backHref = "/admin", backLabel = "Back to overview
           <p className="text-sm text-ink-muted">Draft · changes are kept while this page is open</p>
         </div>
         <div className="fixed inset-x-0 bottom-[68px] z-30 flex gap-3 border-t border-line/60 bg-panel/95 p-3 backdrop-blur lg:static lg:border-0 lg:bg-transparent lg:p-0">
-          <Link href="/admin" className="grid flex-1 place-items-center rounded-full border border-line px-6 py-3 text-sm font-semibold lg:flex-none">Discard</Link>
+          <Link href="/vendor" className="grid flex-1 place-items-center rounded-full border border-line px-6 py-3 text-sm font-semibold lg:flex-none">Discard</Link>
           <button className="flex flex-[2] items-center justify-center gap-2 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-ink lg:flex-none"><Rocket className="size-4" /> Publish to Store</button>
         </div>
       </div>

@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, BarChart3, ChevronRight, PackagePlus, ReceiptText, TicketPercent, TrendingUp, Truck } from "lucide-react";
-import { recentOrders, revenue, type Period } from "@/lib/admin-data";
+import { recentOrders, revenue, type Period } from "@/lib/vendor-data";
+import { products, money } from "@/lib/catalog";
+import { useAuth } from "@/hooks/use-auth";
+import { Thumb } from "@/components/shared/thumb";
 
 const statusStyle: Record<string, string> = {
   Processing: "bg-[var(--warn-soft)] text-[var(--warn)]",
@@ -12,7 +15,7 @@ const statusStyle: Record<string, string> = {
 };
 
 const shortcuts = [
-  { href: "/admin/products/new", label: "Add Item", icon: PackagePlus },
+  { href: "/vendor/products/new", label: "Add Item", icon: PackagePlus },
   { label: "Orders", icon: ReceiptText },
   { label: "Analytics", icon: BarChart3 },
   { label: "Coupons", icon: TicketPercent },
@@ -23,6 +26,7 @@ const card = "rounded-[24px] border border-line/50 bg-panel";
 export function Dashboard() {
   const [period, setPeriod] = useState<Period>("Today");
   const r = revenue[period];
+  const storeName = useAuth((s) => s.user?.storeName) ?? "Your store";
 
   return (
     <div className="space-y-8">
@@ -30,7 +34,7 @@ export function Dashboard() {
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-brand">Aura</span>
           <h2 className="mt-1 text-3xl font-bold tracking-tight lg:hidden">Overview</h2>
-          <p className="mt-1 text-sm text-ink-muted">Flagship storefront · US East</p>
+          <p className="mt-1 text-sm font-semibold text-ink">{storeName}</p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full bg-good-soft/50 px-3 py-1.5 text-xs font-bold text-good">
           <span className="size-2 rounded-full bg-good" /> Live
@@ -142,6 +146,27 @@ export function Dashboard() {
           Reorder
         </button>
       </div>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold tracking-tight">Your displayed catalog</h2>
+            <p className="mt-1 text-sm text-ink-muted">Products customers can discover and buy today.</p>
+          </div>
+          <Link href="/vendor/products/new" className="inline-flex items-center gap-1 text-sm font-semibold text-brand">
+            Add product <ChevronRight className="size-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {products.slice(0, 6).map((product) => (
+            <article key={product.id} className={`${card} p-2.5`}>
+              <Thumb product={product} className="aspect-square rounded-xl" />
+              <p className="mt-2 line-clamp-2 px-1 text-sm font-semibold">{product.name}</p>
+              <p className="px-1 pb-1 pt-1 text-sm font-bold">{money(product.price).replace(".00", "")}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section>
         <div className="mb-4 flex items-center justify-between gap-3">
