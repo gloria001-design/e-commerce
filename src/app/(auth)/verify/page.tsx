@@ -1,2 +1,10 @@
+import { Suspense } from "react";
 import { VerifyForm } from "@/components/store/account-flows";
-export default function VerifyPage() { return <VerifyForm />; }
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div>Loading…</div>}>
+      <VerifyForm />
+    </Suspense>
+  );
+}
