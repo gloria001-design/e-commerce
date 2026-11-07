@@ -5,10 +5,13 @@ import { useState } from "react";
 import { Thumb } from "@/components/shared/thumb";
 import { useCart } from "@/hooks/use-cart";
 import { money } from "@/lib/catalog";
+import { addToCart } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
 import type { Product } from "@/types/catalog";
 
 export function ProductTile({ product }: { product: Product }) {
   const add = useCart((s) => s.add);
+  const user = useAuth((s) => s.user);
   const [liked, setLiked] = useState(false);
   const [added, setAdded] = useState(false);
 
@@ -31,7 +34,7 @@ export function ProductTile({ product }: { product: Product }) {
           {product.oldPrice && <span className="text-xs text-ink-muted line-through">{money(product.oldPrice).replace(".00", "")}</span>}
         </p>
         <button
-          onClick={() => { add(product); setAdded(true); setTimeout(() => setAdded(false), 1200); }}
+          onClick={async () => { add(product); if (user?.role === "customer" && !product.id.startsWith("p")) { try { await addToCart(product.id); } catch {} } setAdded(true); setTimeout(() => setAdded(false), 1200); }}
           aria-label={`Add ${product.name} to cart`}
           className="grid size-10 place-items-center rounded-full bg-brand text-brand-ink transition-transform active:scale-95"
         >

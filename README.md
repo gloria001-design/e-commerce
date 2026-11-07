@@ -1,5 +1,21 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Backend API readiness
+
+The authentication screens are being prepared for the documented Novaxcape API at
+[`https://e-commerce-backend-0l5v.onrender.com/apisdocs/`](https://e-commerce-backend-0l5v.onrender.com/apisdocs/).
+API calls are intentionally not implemented; form submissions remain local previews.
+
+- User signup: `POST /api/v1/create` (`fullName`, `email`, `password`, optional `phoneNumber`)
+- User verification/login/recovery: `/api/v1/verify`, `/api/v1/login`, `/api/v1/resend`,
+  `/api/v1/forgot-password`, and `/api/v1/reset-password`
+- Vendor signup: `POST /api/v1/admin/create` (`name`, `storeName`, `phoneNumber`, `email`, `password`)
+- Vendor verification/login/recovery: `/api/v1/admin/verify`, `/api/v1/admin/login`,
+  `/api/v1/admin/resend-otp`, `/api/v1/admin/forgot-password`, and `/api/v1/admin/reset-password`
+
+The supplied API documentation does not currently list product, cart, checkout, or order
+endpoints, so those storefront and vendor-data screens still use local sample data.
+
 ## Getting Started
 
 First, run the development server:

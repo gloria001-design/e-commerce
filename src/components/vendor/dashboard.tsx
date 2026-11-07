@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, BarChart3, ChevronRight, PackagePlus, ReceiptText, TicketPercent, TrendingUp, Truck } from "lucide-react";
 import { recentOrders, revenue, type Period } from "@/lib/vendor-data";
 import { products, money } from "@/lib/catalog";
+import { getProducts, productToCatalog } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { Thumb } from "@/components/shared/thumb";
 
@@ -25,7 +26,9 @@ const card = "rounded-[24px] border border-line/50 bg-panel";
 
 export function Dashboard() {
   const [period, setPeriod] = useState<Period>("Today");
+  const [liveProducts, setLiveProducts] = useState(products);
   const r = revenue[period];
+  useEffect(() => { getProducts(true).then((data) => { if (data.products?.length) setLiveProducts(data.products.map(productToCatalog)); }).catch(() => undefined); }, []);
   const storeName = useAuth((s) => s.user?.storeName) ?? "Your store";
 
   return (
@@ -158,7 +161,7 @@ export function Dashboard() {
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {products.slice(0, 6).map((product) => (
+          {liveProducts.slice(0, 6).map((product) => (
             <article key={product.id} className={`${card} p-2.5`}>
               <Thumb product={product} className="aspect-square rounded-xl" />
               <p className="mt-2 line-clamp-2 px-1 text-sm font-semibold">{product.name}</p>

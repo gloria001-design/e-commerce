@@ -1,17 +1,22 @@
 "use client";
 
 import { Grid2x2, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductTile } from "@/components/store/product-tile";
 import { CATEGORIES, products } from "@/lib/catalog";
+import { getProducts, productToCatalog } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
 import type { Category } from "@/types/catalog";
 
 export function Catalog({ query = "" }: { query?: string }) {
   const [cat, setCat] = useState<Category | "All">("All");
+  const [remoteProducts, setRemoteProducts] = useState(products);
+  const user = useAuth((s) => s.user);
+  useEffect(() => { if (!user || user.role !== "customer") return; getProducts().then((data) => { if (data.products?.length) setRemoteProducts(data.products.map(productToCatalog)); }).catch(() => undefined); }, [user]);
   const list = useMemo(() => {
     const q = query.toLowerCase();
-    return products.filter((p) => (cat === "All" || p.category === cat) && (!q || p.name.toLowerCase().includes(q)));
-  }, [cat, query]);
+    return remoteProducts.filter((p) => (cat === "All" || p.category === cat) && (!q || p.name.toLowerCase().includes(q)));
+  }, [cat, query, remoteProducts]);
 
   return (
     <section id="picks" className="scroll-mt-24">
