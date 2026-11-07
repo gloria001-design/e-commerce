@@ -1,5 +1,5 @@
-// Browser calls same-origin "/api/v1/..."; next.config.ts proxies them to the backend, so no CORS.
-const API_BASE = "";
+// Calls the hosted backend directly. The backend must allow your origin via CORS.
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://e-commerce-backend-0l5v.onrender.com").replace(/\/$/, "");
 export type ApiError = Error & { status?: number };
 export type ApiProduct = { id: string; productTitle: string; category: string; description: string; quantity: number; colour: string; price: number; productPhoto?: string[]; adminId?: string; createdAt?: string; updatedAt?: string };
 export type CartApiItem = { id: string; productId: string; quantity: number; product: ApiProduct };
