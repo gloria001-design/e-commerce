@@ -28,7 +28,7 @@ export function ProductTile({ product }: { product: Product }) {
     setBusy(true);
     const ok = await add(product);
     setBusy(false);
-    if (ok) { setAdded(true); setTimeout(() => setAdded(false), 1200); } else flash("Couldn't add that. Try again.");
+    if (ok) { setAdded(true); setTimeout(() => setAdded(false), 1200); } else flash(useCart.getState().error);
   };
 
   return (

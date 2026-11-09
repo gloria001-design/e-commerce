@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { Lock, Minus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { Thumb } from "@/components/shared/thumb";
 import { selectCount, selectSubtotal, useCart } from "@/hooks/use-cart";
@@ -20,7 +19,6 @@ export function CartView() {
   const count = useCart(selectCount);
   const subtotal = useCart(selectSubtotal);
   const { load, setQty, remove, clear } = useCart.getState();
-  const [notice, setNotice] = useState("");
 
   const progress = Math.min(100, Math.round((subtotal / FREE_SHIPPING_AT) * 100));
 
@@ -107,23 +105,17 @@ export function CartView() {
             <h2 className="text-lg font-bold">Order Summary</h2>
             <dl className="mt-4 space-y-3 text-sm">
               <Row k="Subtotal" v={money(subtotal)} />
-              <Row k="Shipping" v={subtotal >= FREE_SHIPPING_AT ? "FREE" : "Calculated at payment"} good={subtotal >= FREE_SHIPPING_AT} />
+              <Row k="Shipping" v={subtotal >= FREE_SHIPPING_AT ? "FREE" : "Calculated at checkout"} good={subtotal >= FREE_SHIPPING_AT} />
             </dl>
             <div className="mt-4 flex items-end justify-between border-t border-line/60 pt-4">
               <p className="font-bold">Total</p>
               <p className="text-3xl font-bold text-brand">{money(subtotal)}</p>
             </div>
 
-            {/* One payment button. Not wired to a payment provider yet, but fully clickable. */}
-            <button
-              type="button"
-              onClick={() => setNotice("Payments aren't connected yet. Your bag is saved to your account.")}
-              className="mt-5 flex w-full items-center justify-between rounded-full bg-brand px-5 py-4 text-brand-ink transition-transform active:scale-[0.99]"
-            >
-              <span className="flex items-center gap-2 font-semibold"><Lock className="size-4" /> Proceed to Payment</span>
+            <Link href="/checkout" className="mt-5 flex w-full items-center justify-between rounded-full bg-brand px-5 py-4 text-brand-ink transition-transform active:scale-[0.99]">
+              <span className="flex items-center gap-2 font-semibold"><Lock className="size-4" /> Checkout</span>
               <span className="rounded-full bg-white/20 px-3 py-1 text-sm font-bold">{money(subtotal)}</span>
-            </button>
-            {notice && <p role="status" className="mt-3 rounded-xl bg-soft px-3 py-2 text-center text-sm font-semibold">{notice}</p>}
+            </Link>
             <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-ink-muted"><ShieldCheck className="size-4" /> Secure checkout · 30-day returns</p>
           </div>
         </aside>

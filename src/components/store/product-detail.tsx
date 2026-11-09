@@ -91,7 +91,7 @@ export function ProductDetail({ id }: { id: string }) {
     setBusy(mode);
     const ok = await add(product, qty);
     setBusy("");
-    if (!ok) return flash("Couldn't add that. Try again.");
+    if (!ok) return flash(useCart.getState().error);
     if (mode === "buy") return router.push("/cart");
     setAdded(true); setTimeout(() => setAdded(false), 1400);
   };
