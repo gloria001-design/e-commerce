@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight, Building2, Lock, Mail, Phone, Store, UserRound } from "lucide-react";
 import { Field, StrengthMeter, passwordScore } from "@/components/shared/field";
-import { createCustomer, createVendor, loginCustomer, loginVendor } from "@/lib/api";
+import { createCustomer, createVendor, loginCustomer, loginVendor, readProfile } from "@/lib/api";
 import { useAuth, type AccountRole } from "@/hooks/use-auth";
 
 function Socials() {
@@ -24,7 +24,6 @@ function ErrorMessage({ children }: { children: React.ReactNode }) {
 export function SignInForm({ initialRole = "customer" }: { initialRole?: AccountRole }) {
   const router = useRouter();
   const signIn = useAuth((s) => s.signIn);
-  const vendorRegistered = useAuth((s) => s.vendorRegistered);
   const [role, setRole] = useState<AccountRole>(initialRole);
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -34,21 +33,23 @@ export function SignInForm({ initialRole = "customer" }: { initialRole?: Account
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(""); setLoading(true);
     try {
-      if (role === "vendor" && !vendorRegistered) throw new Error("Create a vendor account before signing in.");
-      if (role === "vendor") await loginVendor(email, pw); else await loginCustomer(email, pw);
-      signIn({ name: role === "vendor" ? "Vendor operator" : "Aura member", email, role, storeName: role === "vendor" ? "Northstar Objects" : undefined });
+      // On success the backend sets the login cookie. We only keep a display profile.
+      const res = role === "vendor" ? await loginVendor(email, pw) : await loginCustomer(email, pw);
+      const profile = readProfile(res);
+      const mail = profile.email ?? email;
+      signIn({ name: profile.name ?? mail.split("@")[0], email: mail, phone: profile.phone, role, storeName: profile.storeName });
       router.push(role === "vendor" ? "/vendor" : "/account");
     } catch (err) {
       setError(err instanceof Error ? err.message : "We could not sign you in. Check your details and try again.");
     } finally { setLoading(false); }
   };
 
-  return <form onSubmit={submit} className="space-y-5"><div><p className="mb-2 text-sm font-bold">Sign in as</p><div className="grid grid-cols-2 gap-2"><RoleChoice role="customer" selected={role === "customer"} onSelect={() => { setRole("customer"); setError(""); }} /><RoleChoice role="vendor" selected={role === "vendor"} onSelect={() => { setRole("vendor"); setError(""); }} /></div></div>{role === "vendor" && <p className="rounded-xl bg-brand/10 px-3 py-2 text-xs font-semibold text-brand">Vendor access uses the backend admin account.</p>}{error && <ErrorMessage>{error} <Link href="/sign-up?role=vendor" className="underline">Create an account</Link></ErrorMessage>}<Field label="Email address" icon={Mail} type="email" value={email} onChange={setEmail} placeholder={role === "vendor" ? "vendor@yourstore.com" : "you@example.com"} autoComplete="email" /><Field label="Password" icon={Lock} type="password" value={pw} onChange={setPw} autoComplete="current-password" hint={<Link href={`/reset-password?role=${role === "vendor" ? "vendor" : "customer"}`} className="font-semibold text-brand">Forgot password?</Link>} /><label className="flex items-center gap-3 text-sm"><input type="checkbox" defaultChecked className="size-5 accent-[var(--brand)]" /> Keep me signed in for 30 days</label><button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-full bg-brand py-4 font-semibold text-brand-ink disabled:cursor-wait disabled:opacity-60">{loading ? "Signing in…" : role === "vendor" ? "Enter vendor workspace" : "Enter Aura Market"} {!loading && <ArrowRight className="size-5" />}</button><p className="text-center text-xs text-ink-muted">Or continue with</p><Socials /><p className="text-center text-sm text-ink-muted">Don&apos;t have an account? <Link href={role === "vendor" ? "/sign-up?role=vendor" : "/sign-up"} className="font-bold text-brand">Sign up first</Link></p></form>;
+  const needsVerify = /verif/i.test(error);
+  return <form onSubmit={submit} className="space-y-5"><div><p className="mb-2 text-sm font-bold">Sign in as</p><div className="grid grid-cols-2 gap-2"><RoleChoice role="customer" selected={role === "customer"} onSelect={() => { setRole("customer"); setError(""); }} /><RoleChoice role="vendor" selected={role === "vendor"} onSelect={() => { setRole("vendor"); setError(""); }} /></div></div>{role === "vendor" && <p className="rounded-xl bg-brand/10 px-3 py-2 text-xs font-semibold text-brand">Vendor access uses the backend admin account.</p>}{error && <ErrorMessage>{error}{" "}{needsVerify ? <Link href={`/verify?role=${role}&email=${encodeURIComponent(email)}`} className="underline">Verify your email</Link> : <Link href={role === "vendor" ? "/sign-up?role=vendor" : "/sign-up"} className="underline">Create an account</Link>}</ErrorMessage>}<Field label="Email address" icon={Mail} type="email" value={email} onChange={setEmail} placeholder={role === "vendor" ? "vendor@yourstore.com" : "you@example.com"} autoComplete="email" /><Field label="Password" icon={Lock} type="password" value={pw} onChange={setPw} autoComplete="current-password" hint={<Link href={`/reset-password?role=${role}`} className="font-semibold text-brand">Forgot password?</Link>} /><button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-full bg-brand py-4 font-semibold text-brand-ink disabled:cursor-wait disabled:opacity-60">{loading ? "Signing in…" : role === "vendor" ? "Enter vendor workspace" : "Enter Aura Market"} {!loading && <ArrowRight className="size-5" />}</button><p className="text-center text-xs text-ink-muted">Or continue with</p><Socials /><p className="text-center text-sm text-ink-muted">Don&apos;t have an account? <Link href={role === "vendor" ? "/sign-up?role=vendor" : "/sign-up"} className="font-bold text-brand">Sign up first</Link></p></form>;
 }
 
 export function SignUpForm({ initialRole = "customer" }: { initialRole?: AccountRole }) {
   const router = useRouter();
-  const signUp = useAuth((s) => s.signUp);
   const [mode, setMode] = useState<AccountRole>(initialRole);
   const [f, setF] = useState({ name: "", email: "", phone: "", pw: "", store: "" });
   const [agree, setAgree] = useState(false); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
@@ -61,12 +62,11 @@ export function SignUpForm({ initialRole = "customer" }: { initialRole?: Account
     try {
       if (mode === "vendor") await createVendor({ name: f.name, storeName: f.store, phoneNumber: f.phone.replace(/\D/g, ""), email: f.email, password: f.pw });
       else await createCustomer({ fullName: f.name, email: f.email, password: f.pw, phoneNumber: f.phone.replace(/\D/g, "") });
-      signUp({ name: f.name, email: f.email, phone: f.phone, role: mode, storeName: mode === "vendor" ? f.store : undefined });
       router.push(`/verify?role=${mode === "vendor" ? "vendor" : "customer"}&email=${encodeURIComponent(f.email)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "We could not create your account. Please try again.");
     } finally { setLoading(false); }
   };
 
-  return <form onSubmit={submit} className="space-y-5"><div><p className="mb-2 text-sm font-bold">Create account as</p><div className="grid grid-cols-2 gap-2"><RoleChoice role="customer" selected={mode === "customer"} onSelect={() => setMode("customer")} /><RoleChoice role="vendor" selected={mode === "vendor"} onSelect={() => setMode("vendor")} /></div></div>{error && <ErrorMessage>{error}</ErrorMessage>}<Socials /><p className="text-center text-xs text-ink-muted">Or sign up with email</p><Field label={mode === "vendor" ? "Your name" : "Full name"} icon={UserRound} value={f.name} onChange={set("name")} placeholder="Sloane Miller" autoComplete="name" />{mode === "vendor" && <Field label="Store name" icon={Building2} value={f.store} onChange={set("store")} placeholder="Northstar Objects" autoComplete="organization" />}<Field label="Email address" icon={Mail} type="email" value={f.email} onChange={set("email")} placeholder="sloane@example.com" autoComplete="email" /><Field label="Mobile number" icon={Phone} type="tel" value={f.phone} onChange={set("phone")} placeholder="(555) 234-8901" autoComplete="tel" required /><div><Field label="Password" icon={Lock} type="password" value={f.pw} onChange={set("pw")} placeholder="Create a secure passphrase" autoComplete="new-password" /><StrengthMeter password={f.pw} /></div><label className="flex items-start gap-3 text-xs text-ink-muted"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-[var(--brand)]" /><span>I agree to Aura Market&apos;s <Link href="/sign-up" className="font-semibold underline">Terms</Link> and <Link href="/sign-up" className="font-semibold underline">Privacy Notice</Link>.</span></label><button disabled={!ok || loading} className="flex w-full items-center justify-center gap-2 rounded-full bg-brand py-4 font-semibold text-brand-ink disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Creating account…" : mode === "vendor" ? "Create vendor account" : "Create user account"} {!loading && <ArrowRight className="size-5" />}</button><p className="text-center text-sm text-ink-muted">Already have an account? <Link href="/sign-in" className="font-bold text-brand">Sign in</Link></p></form>;
+  return <form onSubmit={submit} className="space-y-5"><div><p className="mb-2 text-sm font-bold">Create account as</p><div className="grid grid-cols-2 gap-2"><RoleChoice role="customer" selected={mode === "customer"} onSelect={() => setMode("customer")} /><RoleChoice role="vendor" selected={mode === "vendor"} onSelect={() => setMode("vendor")} /></div></div>{error && <ErrorMessage>{error}</ErrorMessage>}<Socials /><p className="text-center text-xs text-ink-muted">Or sign up with email</p><Field label={mode === "vendor" ? "Your name" : "Full name"} icon={UserRound} value={f.name} onChange={set("name")} placeholder="Sloane Miller" autoComplete="name" />{mode === "vendor" && <Field label="Store name" icon={Building2} value={f.store} onChange={set("store")} placeholder="Northstar Objects" autoComplete="organization" />}<Field label="Email address" icon={Mail} type="email" value={f.email} onChange={set("email")} placeholder="sloane@example.com" autoComplete="email" /><Field label="Mobile number" icon={Phone} type="tel" value={f.phone} onChange={set("phone")} placeholder="(555) 234-8901" autoComplete="tel" required /><div><Field label="Password" icon={Lock} type="password" value={f.pw} onChange={set("pw")} placeholder="Create a secure passphrase" autoComplete="new-password" /><StrengthMeter password={f.pw} /></div><label className="flex items-start gap-3 text-xs text-ink-muted"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-[var(--brand)]" /><span>I agree to Aura Market&apos;s Terms and Privacy Notice.</span></label><button disabled={!ok || loading} className="flex w-full items-center justify-center gap-2 rounded-full bg-brand py-4 font-semibold text-brand-ink disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Creating account…" : mode === "vendor" ? "Create vendor account" : "Create user account"} {!loading && <ArrowRight className="size-5" />}</button><p className="text-center text-sm text-ink-muted">Already have an account? <Link href="/sign-in" className="font-bold text-brand">Sign in</Link></p></form>;
 }

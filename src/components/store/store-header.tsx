@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
-  Bell,
   ChevronDown,
   Search,
   ShoppingBag,
@@ -17,6 +16,7 @@ export function StoreHeader() {
   const router = useRouter();
   const count = useCart(selectCount);
   const user = useAuth((s) => s.user);
+  const hydrated = useAuth((s) => s.hydrated);
   const [q, setQ] = useState("");
   const [mobileSearch, setMobileSearch] = useState(false);
   const search = (e: React.FormEvent) => {
@@ -78,13 +78,6 @@ export function StoreHeader() {
           >
             <Search className="size-5" />
           </button>
-          <button
-            aria-label="Notifications"
-            className="relative hidden size-10 place-items-center rounded-full hover:bg-soft sm:grid"
-          >
-            <Bell className="size-5" />
-            <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-brand shadow-[0_0_10px_var(--brand)]" />
-          </button>
           <Link
             href="/cart"
             aria-label={`Cart, ${count} items`}
@@ -97,7 +90,9 @@ export function StoreHeader() {
               </span>
             )}
           </Link>
-          {user ? (
+          {!hydrated ? (
+            <div className="h-10 w-24" aria-hidden />
+          ) : user ? (
             <Link
               href={user.role === "vendor" ? "/vendor" : "/account"}
               aria-label="Account"

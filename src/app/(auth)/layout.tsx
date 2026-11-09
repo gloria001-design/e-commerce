@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Gift, Package, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Package, ShieldCheck, Store } from "lucide-react";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,12 +10,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="relative max-w-md">
           <h2 className="text-4xl font-bold leading-tight">Everything you love, one tap away.</h2>
           <ul className="mt-8 space-y-4 text-white/85">
-            <li className="flex items-center gap-3"><Gift className="size-5" /> 15% off your first order with code AURA15</li>
-            <li className="flex items-center gap-3"><Package className="size-5" /> Complimentary 2-day shipping over $50</li>
-            <li className="flex items-center gap-3"><ShieldCheck className="size-5" /> 30-day trial returns, 2-year warranty</li>
+            <li className="flex items-center gap-3"><Package className="size-5" /> Free shipping on orders over $150</li>
+            <li className="flex items-center gap-3"><ShieldCheck className="size-5" /> 30-day returns on every order</li>
+            <li className="flex items-center gap-3"><Store className="size-5" /> Open a vendor account and list your products</li>
           </ul>
         </div>
-        <p className="relative text-sm text-white/60">Encrypted and secure · 256-bit TLS</p>
+        <p className="relative text-sm text-white/60">Encrypted and secure</p>
       </aside>
       <div className="flex min-h-screen flex-col px-4 py-5 sm:px-8">
         <Link href="/" className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-ink-muted hover:text-ink"><ArrowLeft className="size-5" /> Back to shop</Link>
