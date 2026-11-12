@@ -10,7 +10,7 @@ import { Thumb } from "@/components/shared/thumb";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { getProductDetail, type ApiError } from "@/lib/api";
-import { FREE_SHIPPING_AT, money } from "@/lib/catalog";
+import { FREE_SHIPPING_AT, money, categoryLabel } from "@/lib/catalog";
 import type { Product } from "@/types/catalog";
 
 type Status = "loading" | "ready" | "missing" | "auth" | "error";
@@ -41,7 +41,7 @@ export function ProductDetail({ id }: { id: string }) {
     if (!hydrated) return;
     let alive = true;
     setStatus("loading");
-    getProductDetail(id)
+    getProductDetail(id, user?.role === "customer")
       .then(({ product, related }) => {
         if (!alive) return;
         setProduct(product); setRelated(related); setActive(0); setQty(1);
@@ -105,7 +105,7 @@ export function ProductDetail({ id }: { id: string }) {
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs font-semibold text-ink-muted sm:text-sm">
         <Link href="/" className="hover:text-brand">Shop</Link>
         <ChevronRight className="size-3.5" aria-hidden />
-        <span>{product.category}</span>
+        <span>{categoryLabel(product.category)}</span>
         <ChevronRight className="size-3.5" aria-hidden />
         <span aria-current="page" className="truncate text-ink">{product.name}</span>
       </nav>
@@ -138,7 +138,7 @@ export function ProductDetail({ id }: { id: string }) {
         {/* Buy box */}
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href="/" className="rounded-full bg-soft px-3 py-1 text-xs font-semibold text-ink-muted hover:text-brand">{product.category}</Link>
+            <Link href="/" className="rounded-full bg-soft px-3 py-1 text-xs font-semibold text-ink-muted hover:text-brand">{categoryLabel(product.category)}</Link>
             <span className={`rounded-full px-3 py-1 text-xs font-bold ${stockLabel.cls}`}>{stockLabel.text}</span>
           </div>
           <h1 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight sm:text-4xl">{product.name}</h1>
@@ -189,7 +189,7 @@ export function ProductDetail({ id }: { id: string }) {
             <h2 className="text-lg font-bold">About this item</h2>
             <p className="mt-2 whitespace-pre-line leading-relaxed text-ink-muted">{product.description?.trim() || "The vendor hasn't added a description yet."}</p>
             <dl className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line/60 bg-line/60 text-sm">
-              {[["Category", product.category], ["Colour", product.color || "—"], ["Availability", soldOut ? "Out of stock" : `${product.stock} in stock`], ["Price", money(product.price)]].map(([k, v]) => (
+              {[["Category", categoryLabel(product.category)], ["Colour", product.color || "—"], ["Availability", soldOut ? "Out of stock" : `${product.stock} in stock`], ["Price", money(product.price)]].map(([k, v]) => (
                 <div key={k} className="bg-panel p-3.5"><dt className="text-xs text-ink-muted">{k}</dt><dd className="mt-0.5 font-semibold capitalize">{v}</dd></div>
               ))}
             </dl>
@@ -199,7 +199,7 @@ export function ProductDetail({ id }: { id: string }) {
 
       {related.length > 0 && (
         <section aria-labelledby="related">
-          <h2 id="related" className="text-xl font-bold sm:text-2xl">More in {product.category}</h2>
+          <h2 id="related" className="text-xl font-bold sm:text-2xl">More in {categoryLabel(product.category)}</h2>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {related.map((p) => <ProductTile key={p.id} product={p} />)}
           </div>

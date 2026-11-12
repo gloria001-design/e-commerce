@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Thumb } from "@/components/shared/thumb";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
-import { money } from "@/lib/catalog";
+import { categoryLabel, money } from "@/lib/catalog";
 import type { Product } from "@/types/catalog";
 
 export function ProductTile({ product }: { product: Product }) {
@@ -40,7 +40,7 @@ export function ProductTile({ product }: { product: Product }) {
           <Heart className={`size-4 ${liked ? "fill-bad text-bad" : ""}`} />
         </button>
       </div>
-      <p className="mt-3 truncate text-xs text-ink-muted">{product.category}</p>
+      <p className="mt-3 truncate text-xs text-ink-muted">{categoryLabel(product.category)}</p>
       <h3 className="mt-1 line-clamp-2 min-h-10 text-sm font-semibold leading-5 sm:text-[15px]"><Link href={`/product/${product.id}`} className="hover:text-brand">{product.name}</Link></h3>
       <div className="mt-2 flex items-end justify-between gap-2">
         <p>

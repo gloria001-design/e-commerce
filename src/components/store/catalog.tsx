@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ProductTile } from "@/components/store/product-tile";
 import { getProducts, productToCatalog, type ApiError } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
+import { categoryLabel } from "@/lib/catalog";
 import type { Product } from "@/types/catalog";
 
 type Status = "loading" | "ready" | "auth" | "error";
@@ -20,7 +21,8 @@ export function Catalog({ query = "" }: { query?: string }) {
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
 
-  // Products come from the backend only. Re-fetch when the session changes (cookie added/removed).
+  // Products come from the backend only (getAllProducts is public, so guests see the shop too).
+  // Re-fetch when the session changes (cookie added/removed).
   useEffect(() => {
     if (!hydrated) return;
     let alive = true;
@@ -78,7 +80,7 @@ export function Catalog({ query = "" }: { query?: string }) {
                 <button key={c} role="tab" aria-selected={cat === c} onClick={() => setCat(c)}
                   className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ${cat === c ? "bg-brand text-brand-ink" : "bg-panel text-ink-muted ring-1 ring-line/60"}`}>
                   {c === "All" && <Grid2x2 className="size-4" />}
-                  {c}
+                  {c === "All" ? c : categoryLabel(c)}
                 </button>
               ))}
             </div>

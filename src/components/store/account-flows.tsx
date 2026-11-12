@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { LockKeyhole, MailCheck } from "lucide-react";
+import { PASSWORD_HINT, meetsPasswordRule } from "@/components/shared/field";
 import { resetPassword, requestPasswordReset, resendCustomerOtp, resendVendorOtp, verifyCustomer, verifyVendor } from "@/lib/api";
 
 const input = "h-12 w-full rounded-xl border border-line bg-canvas px-4 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -78,6 +79,7 @@ export function ResetPasswordForm() {
   };
   const reset = async (e: React.FormEvent) => {
     e.preventDefault(); setError("");
+    if (!meetsPasswordRule(password)) return setError(`Password needs ${PASSWORD_HINT}`);
     try { await resetPassword(email, password, admin); setMessage("Password updated. You can sign in with it now."); }
     catch (err) { setError(errText(err, "We could not update the password.")); }
   };

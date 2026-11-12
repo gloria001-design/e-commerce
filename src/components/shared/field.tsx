@@ -47,23 +47,28 @@ export function Field({ label, icon: Icon, value, onChange, type = "text", place
   );
 }
 
-/** 0-3 score from length, a number and a symbol. */
+/** Backend rule (Swagger): 8+ chars with upper and lower case, a digit and one of @$!%*?&.#^()_-+= , and nothing outside those. */
+export const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#^()_\-+=])[A-Za-z\d@$!%*?&.#^()_\-+=]{8,}$/;
+export const PASSWORD_HINT = "8+ characters with upper and lower case, a number and a symbol (@$!%*?&.#^()_-+=).";
+export const meetsPasswordRule = (pw: string) => PASSWORD_RULE.test(pw);
+
+/** 0-4 score: length, mixed case, a number, a symbol. */
 export function passwordScore(pw: string) {
-  return [pw.length >= 8, /\d/.test(pw), /[^A-Za-z0-9]/.test(pw)].filter(Boolean).length;
+  return [pw.length >= 8, /[a-z]/.test(pw) && /[A-Z]/.test(pw), /\d/.test(pw), /[^A-Za-z0-9]/.test(pw)].filter(Boolean).length;
 }
 
 export function StrengthMeter({ password }: { password: string }) {
   const score = passwordScore(password);
-  const labels = ["Idle", "Weak", "Good", "Strong"];
+  const labels = ["Idle", "Weak", "Fair", "Good", "Strong"];
   return (
     <div className="mt-2" aria-live="polite">
       <div className="flex gap-1.5">
-        {[1, 2, 3].map((n) => (
+        {[1, 2, 3, 4].map((n) => (
           <span key={n} className={`h-1.5 flex-1 rounded-full ${score >= n ? "bg-brand" : "bg-line/60"}`} />
         ))}
       </div>
       <p className="mt-1.5 text-xs text-ink-muted">
-        Strength: {labels[score]} · 8+ chars, a number and a symbol
+        Strength: {labels[score]} · {PASSWORD_HINT}
       </p>
     </div>
   );

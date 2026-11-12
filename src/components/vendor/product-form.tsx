@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Check, ImagePlus, Minus, Plus, Rocket, X } from "lucide-react";
-import { createProduct } from "@/lib/api";
+import { createProduct, type ApiCategory } from "@/lib/api";
+import { PRODUCT_CATEGORIES, categoryLabel } from "@/lib/catalog";
 
-const CATEGORIES = ["Desk Setup & Peripherals", "Audio", "Wearables", "Living", "Health"];
+// Backend rule: colour is letters, spaces and hyphens only (min 2 chars), so no commas or digits.
+const COLOUR_OK = /^[A-Za-z][A-Za-z\s-]*$/;
 
 const card = "rounded-[20px] border border-line/50 bg-panel p-4 sm:p-5";
 const input = "h-12 w-full rounded-xl border border-line bg-canvas px-4 text-base outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -16,7 +18,7 @@ function Label({ children, hint }: { children: React.ReactNode; hint?: React.Rea
 
 export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboard" }: { backHref?: string; backLabel?: string }) {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [category, setCategory] = useState<ApiCategory>(PRODUCT_CATEGORIES[0]);
   const [desc, setDesc] = useState("");
   const [price, setPrice] = useState("");
   const [sale, setSale] = useState("");
@@ -44,16 +46,21 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
 
   const publish = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return setError("Add a product title first.");
+    if (title.trim().length < 3) return setError("Product title needs at least 3 characters.");
     if (p <= 0) return setError("Enter a regular price greater than 0.");
     if (s > 0 && s >= p) return setError("Sale price must be lower than the regular price.");
     if (desc.trim().length < 10) return setError("Add at least 10 characters to the description.");
-    if (!colors.some((c) => c.trim())) return setError("Add a colour before publishing.");
+    const colourList = colors.map((c) => c.trim()).filter(Boolean);
+    if (!colourList.length) return setError("Add a colour before publishing.");
+    const badColour = colourList.find((c) => c.length < 2 || !COLOUR_OK.test(c));
+    if (badColour) return setError(`Colour “${badColour}” can only use letters, spaces and hyphens.`);
+    if (track && stock < 1) return setError("Stock must be at least 1 to publish.");
+    if (Math.round(selling * 100) < 1) return setError("Price is too low.");
     if (!files.length) return setError("Add at least one product photo.");
     setError("");
     setLoading(true);
     try {
-      await createProduct({ productTitle: title.trim(), category, description: desc.trim(), quantity: track ? stock : 1, colour: colors.map((c) => c.trim()).filter(Boolean).join(", "), price: Math.round(selling * 100), productPhoto: files.map((f) => f.file) });
+      await createProduct({ productTitle: title.trim(), category, description: desc.trim(), quantity: track ? stock : 1, colour: colourList.join(" - "), price: Math.round(selling * 100), productPhoto: files.map((f) => f.file) });
       setDone(true);
     } catch (err) { setError(err instanceof Error ? err.message : "We could not publish this product."); } finally { setLoading(false); }
   };
@@ -62,7 +69,7 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
     return (
       <div className="mx-auto grid max-w-md place-items-center rounded-[24px] border border-line/50 bg-panel px-6 py-14 text-center">
         <span className="grid size-14 place-items-center rounded-full bg-good-soft text-good"><Check className="size-7" /></span>
-        <h2 className="mt-4 text-2xl font-bold">Ready to publish</h2>
+        <h2 className="mt-4 text-2xl font-bold">Product published</h2>
         <p className="mt-1 text-ink-muted">“{title}” is now live in your catalog.</p>
         <div className="mt-6 flex gap-3">
           <button onClick={() => setDone(false)} className="rounded-full border border-line px-6 py-3 text-sm font-semibold">Keep editing</button>
@@ -91,9 +98,9 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
           <section className={card}>
             <h3 className="mb-4 font-bold">General Information</h3>
             <div className="space-y-4">
-              <div><Label hint={`${title.length}/80`}>Product title</Label><input value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Apex Low-Profile Mechanical Keyboard" className={input} /></div>
-              <div><Label>Category</Label><select value={category} onChange={(e) => setCategory(e.target.value)} className={input}>{CATEGORIES.map((x) => <option key={x}>{x}</option>)}</select></div>
-              <div><Label hint={`${desc.length}/600`}>Overview description</Label><textarea value={desc} maxLength={600} onChange={(e) => setDesc(e.target.value)} rows={5} placeholder="Machined aluminum top-plate with pre-lubricated linear switches…" className={`${input} h-auto py-3`} /></div>
+              <div><Label hint={`${title.length}/100`}>Product title</Label><input value={title} maxLength={100} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Apex Low-Profile Mechanical Keyboard" className={input} /></div>
+              <div><Label>Category</Label><select value={category} onChange={(e) => setCategory(e.target.value as ApiCategory)} className={input}>{PRODUCT_CATEGORIES.map((x) => <option key={x} value={x}>{categoryLabel(x)}</option>)}</select></div>
+              <div><Label hint={`${desc.length}/1000`}>Overview description</Label><textarea value={desc} maxLength={1000} onChange={(e) => setDesc(e.target.value)} rows={5} placeholder="Machined aluminum top-plate with pre-lubricated linear switches…" className={`${input} h-auto py-3`} /></div>
             </div>
           </section>
 
