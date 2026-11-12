@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Check, ImagePlus, Minus, Plus, Rocket, Wand2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, ImagePlus, Minus, Plus, Rocket, X } from "lucide-react";
+import { createProduct } from "@/lib/api";
 
 const CATEGORIES = ["Desk Setup & Peripherals", "Audio", "Wearables", "Living", "Health"];
-const FINISHES = ["Red Linear", "Brown Tactile", "Blue Clicky"];
 
 const card = "rounded-[20px] border border-line/50 bg-panel p-4 sm:p-5";
 const input = "h-12 w-full rounded-xl border border-line bg-canvas px-4 text-base outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -17,7 +17,6 @@ function Label({ children, hint }: { children: React.ReactNode; hint?: React.Rea
 export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboard" }: { backHref?: string; backLabel?: string }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
-  const [sku, setSku] = useState("");
   const [desc, setDesc] = useState("");
   const [price, setPrice] = useState("");
   const [sale, setSale] = useState("");
@@ -26,12 +25,14 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
   const [stock, setStock] = useState(45);
   const [colors, setColors] = useState(["Midnight Black", "Slate Gray"]);
   const [newColor, setNewColor] = useState("");
-  const [finish, setFinish] = useState(FINISHES[1]);
-  const [files, setFiles] = useState<{ url: string; name: string }[]>([]);
+  const [files, setFiles] = useState<{ url: string; name: string; file: File }[]>([]);
+  const filesRef = useRef(files);
   const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => () => files.forEach((f) => URL.revokeObjectURL(f.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
+  filesRef.current = files;
+  useEffect(() => () => filesRef.current.forEach((f) => URL.revokeObjectURL(f.url)), []);
 
   const p = parseFloat(price) || 0;
   const s = parseFloat(sale) || 0;
@@ -41,13 +42,20 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
   const profit = selling - c;
   const margin = selling > 0 && c > 0 ? Math.round((profit / selling) * 100) : 0;
 
-  const publish = (e: React.FormEvent) => {
+  const publish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return setError("Add a product title first.");
     if (p <= 0) return setError("Enter a regular price greater than 0.");
     if (s > 0 && s >= p) return setError("Sale price must be lower than the regular price.");
+    if (desc.trim().length < 10) return setError("Add at least 10 characters to the description.");
+    if (!colors.some((c) => c.trim())) return setError("Add a colour before publishing.");
+    if (!files.length) return setError("Add at least one product photo.");
     setError("");
-    setDone(true);
+    setLoading(true);
+    try {
+      await createProduct({ productTitle: title.trim(), category, description: desc.trim(), quantity: track ? stock : 1, colour: colors.map((c) => c.trim()).filter(Boolean).join(", "), price: Math.round(selling * 100), productPhoto: files.map((f) => f.file) });
+      setDone(true);
+    } catch (err) { setError(err instanceof Error ? err.message : "We could not publish this product."); } finally { setLoading(false); }
   };
 
   if (done) {
@@ -55,7 +63,7 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
       <div className="mx-auto grid max-w-md place-items-center rounded-[24px] border border-line/50 bg-panel px-6 py-14 text-center">
         <span className="grid size-14 place-items-center rounded-full bg-good-soft text-good"><Check className="size-7" /></span>
         <h2 className="mt-4 text-2xl font-bold">Ready to publish</h2>
-        <p className="mt-1 text-ink-muted">“{title}” passed validation. Saving to a database isn&apos;t connected yet.</p>
+        <p className="mt-1 text-ink-muted">“{title}” is now live in your catalog.</p>
         <div className="mt-6 flex gap-3">
           <button onClick={() => setDone(false)} className="rounded-full border border-line px-6 py-3 text-sm font-semibold">Keep editing</button>
           <Link href={backHref} className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-ink">{backLabel}</Link>
@@ -68,12 +76,12 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
     <form onSubmit={publish} className="pb-20 lg:pb-0">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Add product</h2>
+          <h2 className="text-2xl font-bold lg:hidden">Add product</h2>
           <p className="text-sm text-ink-muted">Draft · changes are kept while this page is open</p>
         </div>
         <div className="fixed inset-x-0 bottom-[68px] z-30 flex gap-3 border-t border-line/60 bg-panel/95 p-3 backdrop-blur lg:static lg:border-0 lg:bg-transparent lg:p-0">
           <Link href="/vendor" className="grid flex-1 place-items-center rounded-full border border-line px-6 py-3 text-sm font-semibold lg:flex-none">Discard</Link>
-          <button className="flex flex-[2] items-center justify-center gap-2 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-ink lg:flex-none"><Rocket className="size-4" /> Publish to Store</button>
+          <button disabled={loading} className="flex flex-[2] items-center justify-center gap-2 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-ink lg:flex-none"><Rocket className="size-4" /> Publish to Store</button>
         </div>
       </div>
       {error && <p role="alert" className="mb-4 rounded-full bg-bad/10 px-4 py-3 text-sm font-semibold text-bad">{error}</p>}
@@ -85,10 +93,6 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
             <div className="space-y-4">
               <div><Label hint={`${title.length}/80`}>Product title</Label><input value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Apex Low-Profile Mechanical Keyboard" className={input} /></div>
               <div><Label>Category</Label><select value={category} onChange={(e) => setCategory(e.target.value)} className={input}>{CATEGORIES.map((x) => <option key={x}>{x}</option>)}</select></div>
-              <div>
-                <Label hint={<button type="button" onClick={() => setSku(`SKU-${Math.random().toString(36).slice(2, 8).toUpperCase()}`)} className="inline-flex items-center gap-1 font-semibold text-brand"><Wand2 className="size-3" /> Generate</button>}>SKU code</Label>
-                <input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="DSK-KB-APEX01" className={input} />
-              </div>
               <div><Label hint={`${desc.length}/600`}>Overview description</Label><textarea value={desc} maxLength={600} onChange={(e) => setDesc(e.target.value)} rows={5} placeholder="Machined aluminum top-plate with pre-lubricated linear switches…" className={`${input} h-auto py-3`} /></div>
             </div>
           </section>
@@ -136,7 +140,7 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
                 <label className="grid aspect-square cursor-pointer place-items-center rounded-xl border-2 border-dashed border-line text-ink-muted hover:border-brand hover:text-brand">
                   <span className="grid place-items-center gap-1 text-xs font-semibold"><ImagePlus className="size-6" /> Add photo</span>
                   <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => {
-                    const next = Array.from(e.target.files ?? []).slice(0, 6 - files.length).map((file) => ({ url: URL.createObjectURL(file), name: file.name }));
+                    const next = Array.from(e.target.files ?? []).slice(0, 6 - files.length).map((file) => ({ url: URL.createObjectURL(file), name: file.name, file }));
                     setFiles([...files, ...next]);
                     e.target.value = "";
                   }} />
@@ -146,8 +150,8 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
           </section>
 
           <section className={card}>
-            <h3 className="mb-4 font-bold">Variants &amp; Finishes</h3>
-            <Label>Colorway options</Label>
+            <h3 className="mb-4 font-bold">Colours</h3>
+            <Label>Colour options</Label>
             <div className="flex flex-wrap gap-2">
               {colors.map((c) => (
                 <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-soft px-3 py-1.5 text-sm font-medium">{c}<button type="button" onClick={() => setColors(colors.filter((x) => x !== c))} aria-label={`Remove ${c}`}><X className="size-3.5" /></button></span>
@@ -156,11 +160,6 @@ export function ProductForm({ backHref = "/vendor", backLabel = "Back to dashboa
             <div className="mt-3 flex gap-2">
               <input value={newColor} onChange={(e) => setNewColor(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (newColor.trim()) { setColors([...colors, newColor.trim()]); setNewColor(""); } } }} placeholder="Add colour" className={`${input} h-10 text-sm`} />
               <button type="button" onClick={() => { if (newColor.trim()) { setColors([...colors, newColor.trim()]); setNewColor(""); } }} className="rounded-xl bg-soft px-4 text-sm font-semibold text-brand">Add</button>
-            </div>
-            <div className="mt-5"><Label>Switch option</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {FINISHES.map((f) => <button key={f} type="button" aria-pressed={finish === f} onClick={() => setFinish(f)} className={`rounded-xl px-2 py-2.5 text-xs font-semibold ${finish === f ? "bg-ink text-canvas" : "bg-soft text-ink-muted"}`}>{f}</button>)}
-              </div>
             </div>
           </section>
         </div>

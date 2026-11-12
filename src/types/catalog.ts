@@ -1,17 +1,19 @@
-export type Category = "Audio & Tech" | "Minimal Home" | "Carry & Style";
-
 export type Product = {
   id: string;
   name: string;
-  category: Category;
+  /** Free text from the backend (vendors choose it), so the shop tabs are built from it. */
+  category: string;
+  /** Major units (the backend stores cents; see productToCatalog). */
   price: number;
   oldPrice?: number;
-  rating: number;
-  reviews: number;
   badge?: string;
   color: string;
-  /** Path inside /public, e.g. "/products/headphones.jpg". Leave empty for a placeholder icon. */
   image?: string;
+  /** Every photo the vendor uploaded (image is the first). */
+  images?: string[];
+  stock: number;
+  description?: string;
 };
 
-export type CartLine = { product: Product; qty: number };
+/** itemId is the backend cart-item id used by update/remove. */
+export type CartLine = { itemId: string; product: Product; qty: number };

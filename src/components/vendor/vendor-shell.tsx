@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Bell, LayoutDashboard, LogOut, PackagePlus, ReceiptText, Store, type LucideIcon } from "lucide-react";
+import { BarChart3, LayoutDashboard, LogOut, PackagePlus, ReceiptText, Store, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { endSession } from "@/lib/session";
 
 type Item = { href?: string; label: string; icon: LucideIcon };
 const items: Item[] = [
@@ -17,10 +18,10 @@ export function VendorShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const user = useAuth((s) => s.user);
-  const signOut = useAuth((s) => s.signOut);
   const initials = (user?.name ?? "V").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const handleSignOut = () => { signOut(); router.push("/"); };
-  const title = path.includes("/products/new") ? "Inventory" : "Overview";
+  const handleSignOut = async () => { await endSession(); router.push("/"); };
+  const title = path.includes("/products/new") ? "Add product" : "Overview";
+  const storeName = user?.storeName ?? "Your store";
 
   return (
     <div className="min-h-screen bg-canvas text-ink lg:grid lg:grid-cols-[240px_1fr]">
@@ -73,12 +74,11 @@ export function VendorShell({ children }: { children: React.ReactNode }) {
                 <span className="font-bold">Vendor</span>
               </Link>
             </div>
-            <h1 className="hidden text-xl font-bold tracking-tight lg:block">{title}</h1>
+            <div className="min-w-0 lg:block">
+              <h1 className="sr-only text-xl font-bold tracking-tight lg:not-sr-only lg:block">{title}</h1>
+              <p className="truncate text-xs font-semibold text-ink-muted lg:mt-0.5">{storeName}</p>
+            </div>
             <div className="flex items-center gap-2">
-              <button aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full hover:bg-soft">
-                <Bell className="size-5" />
-                <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-brand" />
-              </button>
               <span className="grid size-10 place-items-center rounded-full bg-soft text-sm font-bold text-brand" aria-label="Signed in as vendor">
                 {initials}
               </span>

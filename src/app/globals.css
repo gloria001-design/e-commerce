@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -16,6 +15,8 @@
   --color-good: var(--good);
   --color-good-soft: var(--good-soft);
   --color-bad: var(--bad);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
